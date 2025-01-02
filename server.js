@@ -32,9 +32,11 @@ io.on('connection', (socket) => {
 
         // If the session has 4 players, start the game
         if (session.players.length === 4) {
+        setTimeout(() => {
             io.emit("find", { connected: true, sessionId: sessions.indexOf(session) });
             console.log("Players connected in session:", session.players.map(player => player.name));
-        }
+        }, 100); // 100ms delay
+    }
     });
 
     // Listen for "getScore" event (player score submission)
