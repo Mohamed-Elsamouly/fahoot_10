@@ -13,31 +13,26 @@ const expressServer = app.listen(process.env.PORT || 4000, () => {
 const socketio = require('socket.io');
 const io = socketio(expressServer);
 
-let sessions = []; // Stores all active game sessions
+let sessionIdCounter = 0;
+let sessions = {}; // Use an object instead of an array
 
-// Socket.IO logic
-io.on('connection', (socket) => {
-    // Listen for "find" event (player name submission)
-    socket.on("find", (e) => {
-        let session = sessions.find(s => s.players.length < 4);
+socket.on("find", (e) => {
+    let session = Object.values(sessions).find(s => s.players.length < 4);
 
-        // If no session with available slots exists, create a new one
-        if (!session) {
-            session = { players: [], playersScore: [], disconnectedPlayersCount: 0 };
-            sessions.push(session);
-        }
-
-        // Add the player to the session
-        session.players.push({ name: e.name, socketId: socket.id });
-
-        // If the session has 4 players, start the game
-        if (session.players.length === 4) {
-        setTimeout(() => {
-            io.emit("find", { connected: true, sessionId: sessions.indexOf(session) });
-            console.log("Players connected in session:", session.players.map(player => player.name));
-        }, 100); // 100ms delay
+    if (!session) {
+        session = { id: sessionIdCounter++, players: [], playersScore: [], disconnectedPlayersCount: 0 };
+        sessions[session.id] = session;
+        console.log("New session created:", session.id);
     }
-    });
+
+    session.players.push({ name: e.name, socketId: socket.id });
+    console.log(`Player ${e.name} added to session ${session.id}`);
+
+    if (session.players.length === 4) {
+        io.emit("find", { connected: true, sessionId: session.id });
+        console.log("Players connected in session:", session.players.map(player => player.name));
+    }
+});
 
     // Listen for "getScore" event (player score submission)
     socket.on("getScore", (e) => {
